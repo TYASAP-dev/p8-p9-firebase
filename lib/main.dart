@@ -19,7 +19,30 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Firebase Auth Simple',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const LoginScreen(),
+      home: const AuthWrapper(),
+    );
+  }
+}
+
+/// Widget penyaring untuk menentukan halaman mana yang dirender
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasData) {
+          return UserInfoScreen(user: snapshot.data!);
+        }
+        return const LoginScreen();
+      },
     );
   }
 }
@@ -114,6 +137,76 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text('Login'),
                   ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Halaman Informasi User
+class UserInfoScreen extends StatelessWidget {
+  final User user;
+
+  const UserInfoScreen({Key? key, required this.user}) : super(key: key);
+
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dashboard User'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
+            tooltip: 'Logout',
+          ),
+        ],
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Icon(Icons.account_circle, size: 100, color: Colors.blue),
+              const SizedBox(height: 24),
+              const Text(
+                'Login Berhasil!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'UID: ${user.uid}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Email: ${user.email ?? "Tidak ada email"}'),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Email Terverifikasi: ${user.emailVerified ? "Ya" : "Tidak"}',
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Terakhir Login: ${user.metadata.lastSignInTime.toString()}',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
